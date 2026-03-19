@@ -29,7 +29,8 @@ module "postgresql" {
 }
 
 module "backup_vault" {
-  source = "../../"
+  source  = "cloudnationhq/bvault/azure"
+  version = "~> 1.0"
 
   config = {
     name                = module.naming.data_protection_backup_vault.name
@@ -55,7 +56,8 @@ module "backup_vault" {
 }
 
 module "policies" {
-  source = "../../modules/policies"
+  source  = "cloudnationhq/bvault/azure//modules/policies"
+  version = "~> 1.0"
 
   vault_name          = module.backup_vault.data_protection_backup_vault.name
   vault_id            = module.backup_vault.data_protection_backup_vault.id

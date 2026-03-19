@@ -18,7 +18,8 @@ module "rg" {
 }
 
 module "backup_vault" {
-  source = "../../"
+  source  = "cloudnationhq/bvault/azure"
+  version = "~> 1.0"
 
   config = {
     name                = module.naming.data_protection_backup_vault.name
