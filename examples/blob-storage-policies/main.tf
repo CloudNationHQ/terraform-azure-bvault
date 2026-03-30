@@ -30,13 +30,15 @@ module "storage" {
 
 module "backup_vault" {
   source  = "cloudnationhq/bvault/azure"
-  version = "~> 1.0"
+  version = "~> 2.0"
 
   config = {
     name                = module.naming.data_protection_backup_vault.name
     location            = module.rg.groups.demo.location
     resource_group_name = module.rg.groups.demo.name
+    datastore_type      = "VaultStore"
     redundancy          = "LocallyRedundant"
+    soft_delete         = "Off"
 
     identity = {
       type = "SystemAssigned"
@@ -48,31 +50,7 @@ module "backup_vault" {
         scope                = module.storage.account.id
       }
     }
+
+    policies = local.policies
   }
-}
-
-module "policies" {
-  source  = "cloudnationhq/bvault/azure//modules/policies"
-  version = "~> 1.0"
-
-  vault_id            = module.backup_vault.data_protection_backup_vault.id
-  vault_name          = module.backup_vault.data_protection_backup_vault.name
-  resource_group_name = module.rg.groups.demo.name
-  location            = module.rg.groups.demo.location
-
-  config = {
-    blob_storages = {
-      retention = {
-        operational_default_retention_duration = "P30D"
-
-        instances = {
-          storage = {
-            storage_account_id = module.storage.account.id
-          }
-        }
-      }
-    }
-  }
-
-  depends_on = [module.backup_vault]
 }

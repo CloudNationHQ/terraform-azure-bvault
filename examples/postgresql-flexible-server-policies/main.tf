@@ -12,7 +12,7 @@ module "rg" {
   groups = {
     demo = {
       name     = module.naming.resource_group.name_unique
-      location = "northeurope"
+      location = "swedencentral"
     }
   }
 }
@@ -22,7 +22,7 @@ module "postgresql" {
   version = "~> 5.0"
 
   instance = {
-    name                = module.naming.postgresql_server.name_unique
+    name                = module.naming.postgresql_flexible_server.name_unique
     location            = module.rg.groups.demo.location
     resource_group_name = module.rg.groups.demo.name
   }
@@ -30,20 +30,22 @@ module "postgresql" {
 
 module "backup_vault" {
   source  = "cloudnationhq/bvault/azure"
-  version = "~> 1.0"
+  version = "~> 2.0"
 
   config = {
     name                = module.naming.data_protection_backup_vault.name
     location            = module.rg.groups.demo.location
     resource_group_name = module.rg.groups.demo.name
+    datastore_type      = "VaultStore"
     redundancy          = "LocallyRedundant"
+    soft_delete         = "Off"
 
     identity = {
       type = "SystemAssigned"
     }
 
     role_assignments = {
-      psql = {
+      backup = {
         role_definition_name = "PostgreSQL Flexible Server Long Term Retention Backup Role"
         scope                = module.postgresql.server.id
       }
@@ -52,40 +54,7 @@ module "backup_vault" {
         scope                = module.rg.groups.demo.id
       }
     }
+
+    policies = local.policies
   }
-}
-
-module "policies" {
-  source  = "cloudnationhq/bvault/azure//modules/policies"
-  version = "~> 1.0"
-
-  vault_name          = module.backup_vault.data_protection_backup_vault.name
-  vault_id            = module.backup_vault.data_protection_backup_vault.id
-  resource_group_name = module.rg.groups.demo.name
-  location            = module.rg.groups.demo.location
-
-  config = {
-    postgresql_flexible_servers = {
-      retention = {
-        backup_repeating_time_intervals = ["R/2024-01-01T02:00:00+00:00/P1W"]
-
-        default_retention_rule = {
-          life_cycle = {
-            vault = {
-              data_store_type = "VaultStore"
-              duration        = "P4M"
-            }
-          }
-        }
-
-        instances = {
-          psql = {
-            server_id = module.postgresql.server.id
-          }
-        }
-      }
-    }
-  }
-
-  depends_on = [module.backup_vault]
 }
