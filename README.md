@@ -194,14 +194,6 @@ Type: `string`
 
 Default: `null`
 
-### <a name="input_naming"></a> [naming](#input\_naming)
-
-Description: contains naming convention
-
-Type: `map(string)`
-
-Default: `{}`
-
 ### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
 
 Description: default resource group to be used.
