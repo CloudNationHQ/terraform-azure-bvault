@@ -19,12 +19,13 @@ module "rg" {
 
 module "backup_vault" {
   source  = "cloudnationhq/bvault/azure"
-  version = "~> 1.0"
+  version = "~> 2.0"
 
   config = {
     name                = module.naming.data_protection_backup_vault.name
     location            = module.rg.groups.demo.location
     resource_group_name = module.rg.groups.demo.name
+    datastore_type      = "VaultStore"
     redundancy          = "LocallyRedundant"
   }
 }

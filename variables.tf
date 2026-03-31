@@ -5,28 +5,123 @@ variable "config" {
     location                     = optional(string)
     tags                         = optional(map(string))
     cross_region_restore_enabled = optional(bool)
-    datastore_type               = optional(string, "VaultStore")
-    immutability                 = optional(string)
+    datastore_type               = string
+    immutability                 = optional(string, "Disabled")
     redundancy                   = string
-    retention_duration_in_days   = optional(number)
-    soft_delete                  = optional(string)
+    retention_duration_in_days   = optional(number, 14)
+    soft_delete                  = optional(string, "On")
     identity = optional(object({
       identity_ids = optional(set(string))
       type         = string
     }))
     role_assignments = optional(map(object({
-      role_definition_name                   = optional(string)
-      role_definition_id                     = optional(string)
-      scope                                  = string
-      principal_id                           = optional(string)
-      principal_type                         = optional(string)
-      name                                   = optional(string)
-      description                            = optional(string)
-      condition                              = optional(string)
-      condition_version                      = optional(string)
-      delegated_managed_identity_resource_id = optional(string)
-      skip_service_principal_aad_check       = optional(bool)
+      role_definition_name = optional(string, "Contributor")
+      scope                = optional(string)
+      principal_id         = optional(string)
     })), {})
+    policies = optional(object({
+      blob_storages = optional(map(object({
+        backup_repeating_time_intervals        = optional(list(string))
+        name                                   = optional(string)
+        operational_default_retention_duration = optional(string)
+        time_zone                              = optional(string)
+        vault_default_retention_duration       = optional(string)
+        retention_rule = optional(map(object({
+          name     = optional(string)
+          priority = number
+          criteria = object({
+            absolute_criteria      = optional(string)
+            days_of_month          = optional(set(number))
+            days_of_week           = optional(set(string))
+            months_of_year         = optional(set(string))
+            scheduled_backup_times = optional(set(string))
+            weeks_of_month         = optional(set(string))
+          })
+          life_cycle = object({
+            data_store_type = string
+            duration        = string
+          })
+        })))
+        instances = optional(map(object({
+          name                            = optional(string)
+          storage_account_container_names = optional(list(string))
+          storage_account_id              = string
+        })), {})
+      })), {})
+      disks = optional(map(object({
+        backup_repeating_time_intervals = list(string)
+        default_retention_duration      = string
+        name                            = optional(string)
+        time_zone                       = optional(string)
+        retention_rule = optional(map(object({
+          duration = string
+          name     = optional(string)
+          priority = number
+          criteria = object({
+            absolute_criteria = optional(string)
+          })
+        })))
+        instances = optional(map(object({
+          disk_id                      = string
+          name                         = optional(string)
+          snapshot_resource_group_name = string
+          snapshot_subscription_id     = optional(string)
+        })), {})
+      })), {})
+      postgresqls = optional(map(object({
+        backup_repeating_time_intervals = list(string)
+        default_retention_duration      = string
+        name                            = optional(string)
+        time_zone                       = optional(string)
+        retention_rule = optional(map(object({
+          duration = string
+          name     = optional(string)
+          priority = number
+          criteria = object({
+            absolute_criteria      = optional(string)
+            days_of_week           = optional(set(string))
+            months_of_year         = optional(set(string))
+            scheduled_backup_times = optional(set(string))
+            weeks_of_month         = optional(set(string))
+          })
+        })))
+        instances = optional(map(object({
+          database_credential_key_vault_secret_id = optional(string)
+          database_id                             = string
+          name                                    = optional(string)
+        })), {})
+      })), {})
+      postgresql_flexible_servers = optional(map(object({
+        backup_repeating_time_intervals = list(string)
+        name                            = optional(string)
+        time_zone                       = optional(string)
+        default_retention_rule = object({
+          life_cycle = map(object({
+            data_store_type = string
+            duration        = string
+          }))
+        })
+        retention_rule = optional(map(object({
+          name     = optional(string)
+          priority = number
+          criteria = object({
+            absolute_criteria      = optional(string)
+            days_of_week           = optional(set(string))
+            months_of_year         = optional(set(string))
+            scheduled_backup_times = optional(set(string))
+            weeks_of_month         = optional(set(string))
+          })
+          life_cycle = map(object({
+            data_store_type = string
+            duration        = string
+          }))
+        })))
+        instances = optional(map(object({
+          server_id = string
+          name      = optional(string)
+        })), {})
+      })), {})
+    }), {})
   })
 
   validation {
@@ -38,12 +133,6 @@ variable "config" {
     condition     = var.config.resource_group_name != null || var.resource_group_name != null
     error_message = "resource group name must be provided either in the config object or as a separate variable."
   }
-}
-
-variable "naming" {
-  description = "contains naming convention"
-  type        = map(string)
-  default     = {}
 }
 
 variable "location" {
