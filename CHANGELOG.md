@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/CloudNationHQ/terraform-azure-bvault/compare/v2.0.0...v2.1.0) (2026-05-07)
+
+
+### Features
+
+* **deps:** bump github.com/cloudnationhq/az-cn-go-validor in /tests ([#6](https://github.com/CloudNationHQ/terraform-azure-bvault/issues/6)) ([bf6397b](https://github.com/CloudNationHQ/terraform-azure-bvault/commit/bf6397bef58976fd6f101e9188e268cb0f66685f))
+
 ## [2.0.0](https://github.com/CloudNationHQ/terraform-azure-bvault/compare/v1.0.0...v2.0.0) (2026-03-31)
 
 
