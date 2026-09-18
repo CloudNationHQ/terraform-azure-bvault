@@ -1,13 +1,13 @@
 module "naming" {
   source  = "cloudnationhq/naming/azure"
-  version = "~> 0.26"
+  version = "~> 0.32"
 
   suffix = ["demo", "dev"]
 }
 
 module "rg" {
   source  = "cloudnationhq/rg/azure"
-  version = "~> 2.0"
+  version = "~> 3.0"
 
   groups = {
     demo = {
@@ -19,7 +19,7 @@ module "rg" {
 
 module "network" {
   source  = "cloudnationhq/vnet/azure"
-  version = "~> 9.0"
+  version = "~> 10.0"
 
   vnet = {
     name                = module.naming.virtual_network.name
@@ -38,9 +38,8 @@ module "network" {
 
 module "kv" {
   source  = "cloudnationhq/kv/azure"
-  version = "~> 4.0"
+  version = "~> 6.0"
 
-  naming = local.naming
 
   vault = {
     name                = module.naming.key_vault.name_unique
@@ -59,12 +58,16 @@ module "kv" {
 
 module "vm" {
   source  = "cloudnationhq/vm/azure"
-  version = "~> 7.0"
+  version = "~> 8.0"
 
-  naming = local.naming
 
-  instance = {
-    type                = "linux"
+  virtual_machine = {
+    type     = "linux"
+    size     = "Standard_D2s_v3"
+    username = "adminuser"
+    os_disk = {
+      storage_account_type = "Standard_LRS"
+    }
     name                = module.naming.linux_virtual_machine.name_unique
     resource_group_name = module.rg.groups.demo.name
     location            = module.rg.groups.demo.location
@@ -98,9 +101,9 @@ module "vm" {
 
 module "backup_vault" {
   source  = "cloudnationhq/bvault/azure"
-  version = "~> 2.0"
+  version = "~> 3.0"
 
-  config = {
+  vault = {
     name                = module.naming.data_protection_backup_vault.name
     location            = module.rg.groups.demo.location
     resource_group_name = module.rg.groups.demo.name

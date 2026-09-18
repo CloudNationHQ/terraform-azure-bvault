@@ -1,31 +1,28 @@
-data "azurerm_client_config" "current" {}
+data "azurerm_client_config" "this" {}
 
 resource "azurerm_data_protection_backup_vault" "this" {
   resource_group_name = coalesce(
-    lookup(
-      var.config, "resource_group_name", null
-    ), var.resource_group_name
+    var.vault.resource_group_name, var.resource_group_name
   )
 
   location = coalesce(
-    lookup(var.config, "location", null
-    ), var.location
+    var.vault.location, var.location
   )
 
   tags = coalesce(
-    var.config.tags, var.tags
+    var.vault.tags, var.tags
   )
 
-  cross_region_restore_enabled = var.config.cross_region_restore_enabled
-  datastore_type               = var.config.datastore_type
-  immutability                 = var.config.immutability
-  name                         = var.config.name
-  redundancy                   = var.config.redundancy
-  retention_duration_in_days   = var.config.retention_duration_in_days
-  soft_delete                  = var.config.soft_delete
+  cross_region_restore_enabled = var.vault.cross_region_restore_enabled
+  datastore_type               = var.vault.datastore_type
+  immutability                 = var.vault.immutability
+  name                         = var.vault.name
+  redundancy                   = var.vault.redundancy
+  retention_duration_in_days   = var.vault.retention_duration_in_days
+  soft_delete                  = var.vault.soft_delete
 
   dynamic "identity" {
-    for_each = var.config.identity != null ? [var.config.identity] : []
+    for_each = var.vault.identity != null ? { "this" = var.vault.identity } : {}
 
     content {
       identity_ids = identity.value.identity_ids
@@ -35,9 +32,7 @@ resource "azurerm_data_protection_backup_vault" "this" {
 }
 
 resource "azurerm_data_protection_backup_policy_blob_storage" "this" {
-  for_each = lookup(
-    var.config.policies, "blob_storages", {}
-  )
+  for_each = var.vault.policies.blob_storage
 
   name = coalesce(
     each.value.name, each.key
@@ -50,14 +45,16 @@ resource "azurerm_data_protection_backup_policy_blob_storage" "this" {
   vault_default_retention_duration       = each.value.vault_default_retention_duration
 
   dynamic "retention_rule" {
-    for_each = each.value.retention_rule != null ? each.value.retention_rule : {}
+    for_each = each.value.retention_rule
 
     content {
-      name     = coalesce(retention_rule.value.name, retention_rule.key)
       priority = retention_rule.value.priority
+      name = coalesce(
+        retention_rule.value.name, retention_rule.key
+      )
 
       dynamic "criteria" {
-        for_each = retention_rule.value.criteria != null ? [retention_rule.value.criteria] : []
+        for_each = retention_rule.value.criteria != null ? { "this" = retention_rule.value.criteria } : {}
 
         content {
           absolute_criteria      = criteria.value.absolute_criteria
@@ -70,7 +67,7 @@ resource "azurerm_data_protection_backup_policy_blob_storage" "this" {
       }
 
       dynamic "life_cycle" {
-        for_each = retention_rule.value.life_cycle != null ? [retention_rule.value.life_cycle] : []
+        for_each = retention_rule.value.life_cycle != null ? { "this" = retention_rule.value.life_cycle } : {}
 
         content {
           data_store_type = life_cycle.value.data_store_type
@@ -83,17 +80,17 @@ resource "azurerm_data_protection_backup_policy_blob_storage" "this" {
 
 resource "azurerm_data_protection_backup_instance_blob_storage" "this" {
   for_each = merge([
-    for parent_storages_key, parent_storages in lookup(var.config.policies, "blob_storages", {}) : {
-      for child_storages_key, child_storages in lookup(parent_storages, "instances", {}) :
-      "${parent_storages_key}.${child_storages_key}" => merge(child_storages, { parent_storages_key = parent_storages_key })
+    for policy_key, policy in var.vault.policies.blob_storage : {
+      for instance_key, instance in policy.instances :
+      "${policy_key}.${instance_key}" => merge(instance, { policy_key = policy_key, instance_key = instance_key })
     }
   ]...)
 
   name = coalesce(
-    each.value.name, element(split(".", each.key), 1)
+    each.value.name, each.value.instance_key
   )
 
-  backup_policy_id                = azurerm_data_protection_backup_policy_blob_storage.this[each.value.parent_storages_key].id
+  backup_policy_id                = azurerm_data_protection_backup_policy_blob_storage.this[each.value.policy_key].id
   vault_id                        = azurerm_data_protection_backup_vault.this.id
   location                        = azurerm_data_protection_backup_vault.this.location
   storage_account_container_names = each.value.storage_account_container_names
@@ -103,9 +100,7 @@ resource "azurerm_data_protection_backup_instance_blob_storage" "this" {
 }
 
 resource "azurerm_data_protection_backup_policy_disk" "this" {
-  for_each = lookup(
-    var.config.policies, "disks", {}
-  )
+  for_each = var.vault.policies.disks
 
   name = coalesce(
     each.value.name, each.key
@@ -117,15 +112,17 @@ resource "azurerm_data_protection_backup_policy_disk" "this" {
   time_zone                       = each.value.time_zone
 
   dynamic "retention_rule" {
-    for_each = each.value.retention_rule != null ? each.value.retention_rule : {}
+    for_each = each.value.retention_rule
 
     content {
       duration = retention_rule.value.duration
-      name     = coalesce(retention_rule.value.name, retention_rule.key)
       priority = retention_rule.value.priority
+      name = coalesce(
+        retention_rule.value.name, retention_rule.key
+      )
 
       dynamic "criteria" {
-        for_each = retention_rule.value.criteria != null ? [retention_rule.value.criteria] : []
+        for_each = retention_rule.value.criteria != null ? { "this" = retention_rule.value.criteria } : {}
 
         content {
           absolute_criteria = criteria.value.absolute_criteria
@@ -137,17 +134,17 @@ resource "azurerm_data_protection_backup_policy_disk" "this" {
 
 resource "azurerm_data_protection_backup_instance_disk" "this" {
   for_each = merge([
-    for parent_disks_key, parent_disks in lookup(var.config.policies, "disks", {}) : {
-      for child_disks_key, child_disks in lookup(parent_disks, "instances", {}) :
-      "${parent_disks_key}.${child_disks_key}" => merge(child_disks, { parent_disks_key = parent_disks_key })
+    for policy_key, policy in var.vault.policies.disks : {
+      for instance_key, instance in policy.instances :
+      "${policy_key}.${instance_key}" => merge(instance, { policy_key = policy_key, instance_key = instance_key })
     }
   ]...)
 
   name = coalesce(
-    each.value.name, element(split(".", each.key), 1)
+    each.value.name, each.value.instance_key
   )
 
-  backup_policy_id             = azurerm_data_protection_backup_policy_disk.this[each.value.parent_disks_key].id
+  backup_policy_id             = azurerm_data_protection_backup_policy_disk.this[each.value.policy_key].id
   disk_id                      = each.value.disk_id
   vault_id                     = azurerm_data_protection_backup_vault.this.id
   location                     = azurerm_data_protection_backup_vault.this.location
@@ -157,69 +154,8 @@ resource "azurerm_data_protection_backup_instance_disk" "this" {
   depends_on = [azurerm_role_assignment.this]
 }
 
-resource "azurerm_data_protection_backup_policy_postgresql" "this" {
-  for_each = lookup(
-    var.config.policies, "postgresqls", {}
-  )
-
-  name = coalesce(
-    each.value.name, each.key
-  )
-
-  vault_name                      = azurerm_data_protection_backup_vault.this.name
-  resource_group_name             = azurerm_data_protection_backup_vault.this.resource_group_name
-  backup_repeating_time_intervals = each.value.backup_repeating_time_intervals
-  default_retention_duration      = each.value.default_retention_duration
-  time_zone                       = each.value.time_zone
-
-  dynamic "retention_rule" {
-    for_each = each.value.retention_rule != null ? each.value.retention_rule : {}
-
-    content {
-      duration = retention_rule.value.duration
-      name     = coalesce(retention_rule.value.name, retention_rule.key)
-      priority = retention_rule.value.priority
-
-      dynamic "criteria" {
-        for_each = retention_rule.value.criteria != null ? [retention_rule.value.criteria] : []
-
-        content {
-          absolute_criteria      = criteria.value.absolute_criteria
-          days_of_week           = criteria.value.days_of_week
-          months_of_year         = criteria.value.months_of_year
-          scheduled_backup_times = criteria.value.scheduled_backup_times
-          weeks_of_month         = criteria.value.weeks_of_month
-        }
-      }
-    }
-  }
-}
-
-resource "azurerm_data_protection_backup_instance_postgresql" "this" {
-  for_each = merge([
-    for parent_postgresqls_key, parent_postgresqls in lookup(var.config.policies, "postgresqls", {}) : {
-      for child_postgresqls_key, child_postgresqls in lookup(parent_postgresqls, "instances", {}) :
-      "${parent_postgresqls_key}.${child_postgresqls_key}" => merge(child_postgresqls, { parent_postgresqls_key = parent_postgresqls_key })
-    }
-  ]...)
-
-  name = coalesce(
-    each.value.name, element(split(".", each.key), 1)
-  )
-
-  backup_policy_id                        = azurerm_data_protection_backup_policy_postgresql.this[each.value.parent_postgresqls_key].id
-  vault_id                                = azurerm_data_protection_backup_vault.this.id
-  location                                = azurerm_data_protection_backup_vault.this.location
-  database_credential_key_vault_secret_id = each.value.database_credential_key_vault_secret_id
-  database_id                             = each.value.database_id
-
-  depends_on = [azurerm_role_assignment.this]
-}
-
 resource "azurerm_data_protection_backup_policy_postgresql_flexible_server" "this" {
-  for_each = lookup(
-    var.config.policies, "postgresql_flexible_servers", {}
-  )
+  for_each = var.vault.policies.postgresql_flexible_servers
 
   name = coalesce(
     each.value.name, each.key
@@ -230,11 +166,11 @@ resource "azurerm_data_protection_backup_policy_postgresql_flexible_server" "thi
   time_zone                       = each.value.time_zone
 
   dynamic "default_retention_rule" {
-    for_each = each.value.default_retention_rule != null ? [each.value.default_retention_rule] : []
+    for_each = each.value.default_retention_rule != null ? { "this" = each.value.default_retention_rule } : {}
 
     content {
       dynamic "life_cycle" {
-        for_each = default_retention_rule.value.life_cycle != null ? default_retention_rule.value.life_cycle : {}
+        for_each = default_retention_rule.value.life_cycle
 
         content {
           data_store_type = life_cycle.value.data_store_type
@@ -245,7 +181,7 @@ resource "azurerm_data_protection_backup_policy_postgresql_flexible_server" "thi
   }
 
   dynamic "retention_rule" {
-    for_each = each.value.retention_rule != null ? each.value.retention_rule : {}
+    for_each = each.value.retention_rule
 
     content {
       name = coalesce(
@@ -255,7 +191,7 @@ resource "azurerm_data_protection_backup_policy_postgresql_flexible_server" "thi
       priority = retention_rule.value.priority
 
       dynamic "criteria" {
-        for_each = retention_rule.value.criteria != null ? [retention_rule.value.criteria] : []
+        for_each = retention_rule.value.criteria != null ? { "this" = retention_rule.value.criteria } : {}
 
         content {
           absolute_criteria      = criteria.value.absolute_criteria
@@ -267,7 +203,7 @@ resource "azurerm_data_protection_backup_policy_postgresql_flexible_server" "thi
       }
 
       dynamic "life_cycle" {
-        for_each = retention_rule.value.life_cycle != null ? retention_rule.value.life_cycle : {}
+        for_each = retention_rule.value.life_cycle
 
         content {
           data_store_type = life_cycle.value.data_store_type
@@ -280,17 +216,17 @@ resource "azurerm_data_protection_backup_policy_postgresql_flexible_server" "thi
 
 resource "azurerm_data_protection_backup_instance_postgresql_flexible_server" "this" {
   for_each = merge([
-    for parent_servers_key, parent_servers in lookup(var.config.policies, "postgresql_flexible_servers", {}) : {
-      for child_servers_key, child_servers in lookup(parent_servers, "instances", {}) :
-      "${parent_servers_key}.${child_servers_key}" => merge(child_servers, { parent_servers_key = parent_servers_key })
+    for policy_key, policy in var.vault.policies.postgresql_flexible_servers : {
+      for instance_key, instance in policy.instances :
+      "${policy_key}.${instance_key}" => merge(instance, { policy_key = policy_key, instance_key = instance_key })
     }
   ]...)
 
   name = coalesce(
-    each.value.name, element(split(".", each.key), 1)
+    each.value.name, each.value.instance_key
   )
 
-  backup_policy_id = azurerm_data_protection_backup_policy_postgresql_flexible_server.this[each.value.parent_servers_key].id
+  backup_policy_id = azurerm_data_protection_backup_policy_postgresql_flexible_server.this[each.value.policy_key].id
   server_id        = each.value.server_id
   vault_id         = azurerm_data_protection_backup_vault.this.id
   location         = azurerm_data_protection_backup_vault.this.location
@@ -299,17 +235,23 @@ resource "azurerm_data_protection_backup_instance_postgresql_flexible_server" "t
 }
 
 resource "azurerm_role_assignment" "this" {
-  for_each = lookup(
-    var.config, "role_assignments", {}
-  )
+  for_each = var.vault.role_assignments
 
   scope = coalesce(
     each.value.scope, azurerm_data_protection_backup_vault.this.id
   )
 
   principal_id = coalesce(
-    each.value.principal_id, try(azurerm_data_protection_backup_vault.this.identity[0].principal_id, data.azurerm_client_config.current.object_id)
+    each.value.principal_id, try(azurerm_data_protection_backup_vault.this.identity[0].principal_id, data.azurerm_client_config.this.object_id)
   )
 
-  role_definition_name = each.value.role_definition_name
+  role_definition_name                   = each.value.role_definition_name
+  role_definition_id                     = each.value.role_definition_id
+  principal_type                         = each.value.principal_type
+  name                                   = each.value.name
+  description                            = each.value.description
+  condition                              = each.value.condition
+  condition_version                      = each.value.condition_version
+  delegated_managed_identity_resource_id = each.value.delegated_managed_identity_resource_id
+  skip_service_principal_aad_check       = each.value.skip_service_principal_aad_check
 }

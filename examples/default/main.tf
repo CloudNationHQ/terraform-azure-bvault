@@ -1,13 +1,13 @@
 module "naming" {
   source  = "cloudnationhq/naming/azure"
-  version = "~> 0.26"
+  version = "~> 0.32"
 
   suffix = ["demo", "dev"]
 }
 
 module "rg" {
   source  = "cloudnationhq/rg/azure"
-  version = "~> 2.0"
+  version = "~> 3.0"
 
   groups = {
     demo = {
@@ -19,9 +19,9 @@ module "rg" {
 
 module "backup_vault" {
   source  = "cloudnationhq/bvault/azure"
-  version = "~> 2.0"
+  version = "~> 3.0"
 
-  config = {
+  vault = {
     name                = module.naming.data_protection_backup_vault.name
     location            = module.rg.groups.demo.location
     resource_group_name = module.rg.groups.demo.name
