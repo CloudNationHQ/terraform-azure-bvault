@@ -1,6 +1,6 @@
 locals {
   policies = {
-    blob_storages = {
+    blob_storage = {
       daily = {
         operational_default_retention_duration = "P30D"
 

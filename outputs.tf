@@ -3,12 +3,12 @@ output "data_protection_backup_vault" {
   value       = azurerm_data_protection_backup_vault.this
 }
 
-output "policy_blob_storages" {
+output "policy_blob_storage" {
   description = "contains all exported attributes of the data protection backup policy blob storage"
   value       = azurerm_data_protection_backup_policy_blob_storage.this
 }
 
-output "instance_blob_storages" {
+output "instance_blob_storage" {
   description = "contains all exported attributes of the data protection backup instance blob storage"
   value       = azurerm_data_protection_backup_instance_blob_storage.this
 }
@@ -21,16 +21,6 @@ output "policy_disks" {
 output "instance_disks" {
   description = "contains all exported attributes of the data protection backup instance disk"
   value       = azurerm_data_protection_backup_instance_disk.this
-}
-
-output "policy_postgresqls" {
-  description = "contains all exported attributes of the data protection backup policy postgresql"
-  value       = azurerm_data_protection_backup_policy_postgresql.this
-}
-
-output "instance_postgresqls" {
-  description = "contains all exported attributes of the data protection backup instance postgresql"
-  value       = azurerm_data_protection_backup_instance_postgresql.this
 }
 
 output "policy_postgresql_flexible_servers" {
