@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/CloudNationHQ/terraform-azure-bvault/compare/v3.0.0...v3.1.0) (2026-10-20)
+
+
+### Features
+
+* **deps:** bump github.com/klauspost/compress in /tests ([#11](https://github.com/CloudNationHQ/terraform-azure-bvault/issues/11)) ([91e13e8](https://github.com/CloudNationHQ/terraform-azure-bvault/commit/91e13e8b5271cc893575acf4992ad677c04797f9))
+
 ## [3.0.0](https://github.com/CloudNationHQ/terraform-azure-bvault/compare/v2.0.0...v3.0.0) (2026-09-18)
 
 
