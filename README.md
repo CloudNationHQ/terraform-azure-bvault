@@ -55,16 +55,17 @@ Type:
 
 ```hcl
 object({
-    name                         = string
-    resource_group_name          = optional(string)
-    location                     = optional(string)
-    tags                         = optional(map(string))
-    cross_region_restore_enabled = optional(bool)
-    datastore_type               = string
-    immutability                 = optional(string)
-    redundancy                   = string
-    retention_duration_in_days   = optional(number)
-    soft_delete                  = optional(string)
+    name                                = string
+    resource_group_name                 = optional(string)
+    location                            = optional(string)
+    tags                                = optional(map(string))
+    alerts_for_all_job_failures_enabled = optional(bool)
+    cross_region_restore_enabled        = optional(bool)
+    datastore_type                      = string
+    immutability                        = optional(string)
+    redundancy                          = string
+    retention_duration_in_days          = optional(number)
+    soft_delete                         = optional(string)
     identity = optional(object({
       identity_ids = optional(set(string))
       type         = string
