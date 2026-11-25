@@ -13,13 +13,14 @@ resource "azurerm_data_protection_backup_vault" "this" {
     var.vault.tags, var.tags
   )
 
-  cross_region_restore_enabled = var.vault.cross_region_restore_enabled
-  datastore_type               = var.vault.datastore_type
-  immutability                 = var.vault.immutability
-  name                         = var.vault.name
-  redundancy                   = var.vault.redundancy
-  retention_duration_in_days   = var.vault.retention_duration_in_days
-  soft_delete                  = var.vault.soft_delete
+  alerts_for_all_job_failures_enabled = var.vault.alerts_for_all_job_failures_enabled
+  cross_region_restore_enabled        = var.vault.cross_region_restore_enabled
+  datastore_type                      = var.vault.datastore_type
+  immutability                        = var.vault.immutability
+  name                                = var.vault.name
+  redundancy                          = var.vault.redundancy
+  retention_duration_in_days          = var.vault.retention_duration_in_days
+  soft_delete                         = var.vault.soft_delete
 
   dynamic "identity" {
     for_each = var.vault.identity != null ? { "this" = var.vault.identity } : {}
